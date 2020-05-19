@@ -11,6 +11,7 @@ import pandas as pd
 import scipy.stats as ss 
 import logging
 import math
+import matplotlib.pyplot as plt
 
 # --------------------------- utilities ------------------------------------- #
 
@@ -25,69 +26,82 @@ def inv_sigmoid(y):
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO,format='%(name)s - %(levelname)s - %(message)s')
 
-# --------------------------- configuration -------------------------------------------- #
-
-# select the size of the sample be selected 
-size = 1000
-# relationship type 
-# sigmoid
-# quadratic
-# noise
-case = "quadratic"
-
-# --------------------------- generate data on independent variables --------------------------- #
-
-# generate the independent variables
-x1 = np.random.normal(loc = 2, scale = 100, size = size)
-x2 = np.linspace(-300,300,size)
-
-# generate the y from the data based on the case
-if case == "sigmoid":
-    # get the true parameters 
-    alpha = 3 ; beta1 = 4 ; beta2 = 2
-    # set threshold 
-    threshold = 0.5
-    # case 1 use a simple logistic
-    true_values = sigmoid(alpha + beta1 * x1 + beta2 * x2)
-    noise = np.random.normal(loc = 0, scale = np.abs((x1 - x1.mean()))/100)
-    y = (true_values + noise >= threshold).astype(int)
+def synthetic_data_generator(size,dgp,parameters,plots = True):
+    """
+    synthetic_data_generator(size,dgp,plots = True)
     
-elif case == "quadratic": 
-    # get the true parameters 
-    alpha = 3 ; beta1 = 1 ; beta2 = 2
-    # case 2 circle
-    true_values = alpha + beta1 * x1**2 + beta2 * x2**2
-    noise = np.random.normal(loc = 0, scale = beta1 * 10 * (x1 - x1.mean())**2)
-    # set threshold 
-    threshold = (true_values + noise).mean()
-    y = (true_values + noise >= threshold).astype(int)
+    # ------- PARAMETERS -------- #
     
-elif case == "noise":
-    # purely random y
-    y = ss.bernoulli.rvs(p = 0.5, size = size)
+    size: int
+        size of the sample
     
-else:
-    raise Exception
+    dgp: str
+        data generating process ; "sigmoid", "quadratic", "noise"
+        
+    parameters: dict
+        true parameters, dict keys are "alpha","beta1","beta2"
+        
+    plots : Bool 
+        True if you wants the plots to be saved
     
-# --------------------------- plot the data ---------------------------------------- # 
-  
-_,ax = plt.subplots()
-ax.scatter(x1[np.where(y == 0)],x2[np.where(y == 0)],color="blue")
-ax.scatter(x1[np.where(y == 1)],x2[np.where(y == 1)],color="red")
-if (case == "sigmoid"): 
-    ax.plot(x1[np.argsort(x1)],(inv_sigmoid(threshold) - alpha - beta1 * x1[np.argsort(x1)])/beta2)
-elif (case == "quadratic"):
-    ax.plot(x1[np.argsort(x1)],np.sqrt((threshold - alpha - beta1 * x1[np.argsort(x1)]**2)/beta2))
-    ax.plot(x1[np.argsort(x1)],-np.sqrt((threshold - alpha - beta1 * x1[np.argsort(x1)]**2)/beta2))
-ax.set_xlabel("x1")
-ax.set_ylabel("x2")
-
-# -------------------------- save the data ------------------------------------ # 
-
-# get the data in a single array
-data = np.array([y,x1,x1]).T
-# save the data in a dataframe
-data = pd.DataFrame(data, columns = ["y","x1","x2"])
-# save data to excel 
-data_name = "SyntheticData_" + case + ".xlsx"
-data.to_excel("/Users/davideferri/Documents/Repos/sklearn_applications/BivariateClassification_MLexample/data/" + data_name)
+    # ------- OUTPUT ------------ # 
+    
+    data: np.array 
+        data generated
+    """
+    # get parameters 
+    alpha = parameters["alpha"] ; beta1 = parameters["beta1"] ; beta2 = parameters["beta2"]
+    
+    # --------------------------- generate data on independent variables --------------------------- #
+    
+    # generate the independent variables
+    x1 = np.random.normal(loc = 2, scale = 100, size = size)
+    x2 = np.linspace(-300,300,size)
+    
+    # generate the y from the data based on the case
+    if dgp == "sigmoid":
+        # set threshold 
+        threshold = 0.5
+        # case 1 use a simple logistic
+        true_values = sigmoid(alpha + beta1 * x1 + beta2 * x2)
+        values = sigmoid(alpha + beta1 * x1 + beta2 * x2 + np.random.normal(loc = 0, scale = (beta2 + alpha + beta1) * np.abs((x1 - x1.mean()))))
+        y = (values >= threshold).astype(int)
+        
+    elif dgp == "quadratic": 
+        # case 2 circle
+        true_values = alpha + beta1 * x1**2 + beta2 * x2**2
+        values = true_values + np.random.normal(loc = 0, scale = beta1 * 10 * (x1 - x1.mean())**2)
+        # set threshold 
+        threshold = values.mean()
+        y = (values >= threshold).astype(int)
+        
+    elif dgp == "noise":
+        # purely random y
+        y = ss.bernoulli.rvs(p = 0.5, size = size)
+        
+    else:
+        raise Exception
+        
+    # --------------------------- plot the data ---------------------------------------- # 
+    
+    if plots == True:
+        _,ax = plt.subplots()
+        ax.scatter(x1[np.where(y == 0)],x2[np.where(y == 0)],color="blue")
+        ax.scatter(x1[np.where(y == 1)],x2[np.where(y == 1)],color="red")
+        if (dgp == "sigmoid"): 
+            ax.plot(x1[np.argsort(x1)],(inv_sigmoid(threshold) - alpha - beta1 * x1[np.argsort(x1)])/beta2)
+        elif (dgp == "quadratic"):
+            ax.plot(x1[np.argsort(x1)],np.sqrt((threshold - alpha - beta1 * x1[np.argsort(x1)]**2)/beta2))
+            ax.plot(x1[np.argsort(x1)],-np.sqrt((threshold - alpha - beta1 * x1[np.argsort(x1)]**2)/beta2))
+        ax.set_xlabel("x1")
+        ax.set_ylabel("x2")
+        graph_name = "SyntheticData_scatter_" + dgp
+        plt.savefig("/Users/davideferri/Documents/Repos/sklearn_applications/BivariateClassification_MLexample/graphs/" + graph_name)
+    
+    # -------------------------- return the data ------------------------------------ # 
+    
+    # get the data in a single array
+    data = np.array([y,x1,x1]).T
+    
+    return data
+    
