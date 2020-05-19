@@ -30,7 +30,10 @@ logging.basicConfig(level=logging.INFO,format='%(name)s - %(levelname)s - %(mess
 # select the size of the sample be selected 
 size = 1000
 # relationship type 
-case = 2
+# sigmoid
+# quadratic
+# noise
+case = "quadratic"
 
 # --------------------------- generate data on independent variables --------------------------- #
 
@@ -39,7 +42,7 @@ x1 = np.random.normal(loc = 2, scale = 100, size = size)
 x2 = np.linspace(-300,300,size)
 
 # generate the y from the data based on the case
-if case == 1:
+if case == "sigmoid":
     # get the true parameters 
     alpha = 3 ; beta1 = 4 ; beta2 = 2
     # set threshold 
@@ -49,7 +52,7 @@ if case == 1:
     noise = np.random.normal(loc = 0, scale = np.abs((x1 - x1.mean()))/100)
     y = (true_values + noise >= threshold).astype(int)
     
-elif case == 2: 
+elif case == "quadratic": 
     # get the true parameters 
     alpha = 3 ; beta1 = 1 ; beta2 = 2
     # case 2 circle
@@ -59,7 +62,7 @@ elif case == 2:
     threshold = (true_values + noise).mean()
     y = (true_values + noise >= threshold).astype(int)
     
-elif case == 3:
+elif case == "noise":
     # purely random y
     y = ss.bernoulli.rvs(p = 0.5, size = size)
     
@@ -71,8 +74,20 @@ else:
 _,ax = plt.subplots()
 ax.scatter(x1[np.where(y == 0)],x2[np.where(y == 0)],color="blue")
 ax.scatter(x1[np.where(y == 1)],x2[np.where(y == 1)],color="red")
-if (case == 1): 
+if (case == "sigmoid"): 
     ax.plot(x1[np.argsort(x1)],(inv_sigmoid(threshold) - alpha - beta1 * x1[np.argsort(x1)])/beta2)
-elif (case == 2):
+elif (case == "quadratic"):
     ax.plot(x1[np.argsort(x1)],np.sqrt((threshold - alpha - beta1 * x1[np.argsort(x1)]**2)/beta2))
     ax.plot(x1[np.argsort(x1)],-np.sqrt((threshold - alpha - beta1 * x1[np.argsort(x1)]**2)/beta2))
+ax.set_xlabel("x1")
+ax.set_ylabel("x2")
+
+# -------------------------- save the data ------------------------------------ # 
+
+# get the data in a single array
+data = np.array([y,x1,x1]).T
+# save the data in a dataframe
+data = pd.DataFrame(data, columns = ["y","x1","x2"])
+# save data to excel 
+data_name = "SyntheticData_" + case + ".xlsx"
+data.to_excel("/Users/davideferri/Documents/Repos/sklearn_applications/BivariateClassification_MLexample/data/" + data_name)
