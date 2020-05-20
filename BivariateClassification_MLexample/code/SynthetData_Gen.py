@@ -47,7 +47,7 @@ def synthetic_data_generator(size,dgp,parameters,plots = True):
     # ------- OUTPUT ------------ # 
     
     data: np.array 
-        data generated
+        data generated   
     """
     # get parameters 
     alpha = parameters["alpha"] ; beta1 = parameters["beta1"] ; beta2 = parameters["beta2"]
