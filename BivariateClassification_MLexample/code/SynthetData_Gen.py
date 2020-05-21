@@ -75,6 +75,14 @@ def synthetic_data_generator(size,dgp,parameters,plots = True):
         threshold = values.mean()
         y = (values >= threshold).astype(int)
         
+    elif dgp == "easy": 
+        # set threshold 
+        threshold = 0.5
+        # case 1 use a simple logistic
+        true_values = sigmoid(alpha + beta1 * x1 + beta2 * x2)
+        values = sigmoid(alpha + beta1 * x1 + beta2 * x2 + np.random.normal(loc = 0, scale = 0.01))
+        y = (values >= threshold).astype(int)
+        
     elif dgp == "noise":
         # purely random y
         y = ss.bernoulli.rvs(p = 0.5, size = size)
@@ -101,7 +109,7 @@ def synthetic_data_generator(size,dgp,parameters,plots = True):
     # -------------------------- return the data ------------------------------------ # 
     
     # get the data in a single array
-    data = np.array([y,x1,x1]).T
+    data = np.array([y,x1,x2]).T
     
     return data
     
