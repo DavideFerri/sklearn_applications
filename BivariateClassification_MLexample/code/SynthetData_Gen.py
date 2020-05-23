@@ -24,9 +24,9 @@ def inv_sigmoid(y):
 
 # initialize the logger
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO,format='%(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG,format='%(name)s - %(levelname)s - %(message)s')
 
-def synthetic_data_generator(size,dgp,parameters,plots = True):
+def synthetic_data_generator(size,dgp,parameters,noise,plots = True):
     """
     synthetic_data_generator(size,dgp,plots = True)
     
@@ -42,7 +42,10 @@ def synthetic_data_generator(size,dgp,parameters,plots = True):
         true parameters, dict keys are "alpha","beta1","beta2"
         
     plots : Bool 
-        True if you wants the plots to be saved
+        True if you wants the plots to be savedù
+        
+    noise : float
+        Noise coefficient
     
     # ------- OUTPUT ------------ # 
     
@@ -55,32 +58,24 @@ def synthetic_data_generator(size,dgp,parameters,plots = True):
     # --------------------------- generate data on independent variables --------------------------- #
     
     # generate the independent variables
-    x1 = np.random.normal(loc = 2, scale = 100, size = size)
+    x1 = np.random.normal(loc = 200, scale = 100, size = size)
     x2 = np.linspace(-300,300,size)
     
     # generate the y from the data based on the case
     if dgp == "sigmoid":
-        # set threshold 
-        threshold = 0.5
         # case 1 use a simple logistic
         true_values = sigmoid(alpha + beta1 * x1 + beta2 * x2)
-        values = sigmoid(alpha + beta1 * x1 + beta2 * x2 + np.random.normal(loc = 0, scale = (beta2 + alpha + beta1) * np.abs((x1 - x1.mean()))))
+        values = sigmoid(alpha + beta1 * x1 + beta2 * x2 + np.random.normal(loc = 0, scale = noise * np.abs((x1 - x1.mean()))))
+        # set threshold 
+        threshold = values.mean()
         y = (values >= threshold).astype(int)
         
     elif dgp == "quadratic": 
         # case 2 circle
         true_values = alpha + beta1 * x1**2 + beta2 * x2**2
-        values = true_values + np.random.normal(loc = 0, scale = beta1 * 10 * (x1 - x1.mean())**2)
+        values = true_values + np.random.normal(loc = 0, scale = noise * (x1 - x1.mean())**2)
         # set threshold 
         threshold = values.mean()
-        y = (values >= threshold).astype(int)
-        
-    elif dgp == "easy": 
-        # set threshold 
-        threshold = 0.5
-        # case 1 use a simple logistic
-        true_values = sigmoid(alpha + beta1 * x1 + beta2 * x2)
-        values = sigmoid(alpha + beta1 * x1 + beta2 * x2 + np.random.normal(loc = 0, scale = 0.01))
         y = (values >= threshold).astype(int)
         
     elif dgp == "noise":
@@ -95,12 +90,17 @@ def synthetic_data_generator(size,dgp,parameters,plots = True):
     if plots == True:
         _,ax = plt.subplots()
         ax.scatter(x1[np.where(y == 0)],x2[np.where(y == 0)],color="blue")
-        ax.scatter(x1[np.where(y == 1)],x2[np.where(y == 1)],color="red")
+        ax.scatter(x1[np.where(y == 1)],x2[np.where(y == 1)],color="yellow")
         if (dgp == "sigmoid"): 
             ax.plot(x1[np.argsort(x1)],(inv_sigmoid(threshold) - alpha - beta1 * x1[np.argsort(x1)])/beta2)
+            boundary = []
+            boundary.append(np.array([x1[np.argsort(x1)],(inv_sigmoid(threshold) - alpha - beta1 * x1[np.argsort(x1)])/beta2]).T)
         elif (dgp == "quadratic"):
             ax.plot(x1[np.argsort(x1)],np.sqrt((threshold - alpha - beta1 * x1[np.argsort(x1)]**2)/beta2))
             ax.plot(x1[np.argsort(x1)],-np.sqrt((threshold - alpha - beta1 * x1[np.argsort(x1)]**2)/beta2))
+            boundary = []
+            boundary.append(np.array([x1[np.argsort(x1)],-np.sqrt((threshold - alpha - beta1 * x1[np.argsort(x1)]**2)/beta2)]).T)
+            boundary.append(np.array([x1[np.argsort(x1)],np.sqrt((threshold - alpha - beta1 * x1[np.argsort(x1)]**2)/beta2)]).T)
         ax.set_xlabel("x1")
         ax.set_ylabel("x2")
         graph_name = "SyntheticData_scatter_" + dgp
@@ -110,6 +110,5 @@ def synthetic_data_generator(size,dgp,parameters,plots = True):
     
     # get the data in a single array
     data = np.array([y,x1,x2]).T
-    
-    return data
+    return data,boundary
     
