@@ -31,7 +31,6 @@ import sklearn
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG,format='%(name)s - %(levelname)s - %(message)s')
 
-print(sorted(sklearn.metrics.SCORERS.keys()))
 # --------------------- utilities --------------------------------- # 
 
 
@@ -76,11 +75,11 @@ def model_test_validate(model,X_train,y_train,X_test,y_test,true_boundary):
 # set the sample size
 size = 3000
 # set the dgp
-dgp = "sigmoid"
+dgp = "quadratic"
 # set the parameters
 true_parameters = {"alpha" : 2, "beta1" : 2, "beta2" : 4} 
 # set the noise coeff
-noise = 20
+noise = 10
 # set the test size as a proportion 
 test_size = 0.2
 
