@@ -85,8 +85,9 @@ test_size = 0.2
 
 # ------------------- specify estimators/models ----------------------------- # 
 
-models = [
+models = {
         # first model - Linear SVC with standard scaler
+        "Scaler linear SVC" :
         RandomizedSearchCV(
                 make_pipeline(StandardScaler(),LinearSVC(max_iter = 500)),
                 param_distributions = {'linearsvc__C': ss.expon(scale=100)},
@@ -97,6 +98,7 @@ models = [
                 n_jobs = -1),            
         
         #  second model - Logistic regression with standard scaler
+        "Scaler logistic regression" :
         RandomizedSearchCV(
                 make_pipeline(StandardScaler(),LogisticRegression(solver = 'lbfgs',max_iter = 500)),
                 param_distributions = {'logisticregression__C': ss.expon(scale=100)},
@@ -107,6 +109,7 @@ models = [
                 n_jobs = -1),
     
         # third model - MLP classifier with standard scaler
+        "Scaler MLP classifier" :
         RandomizedSearchCV(
                 make_pipeline(StandardScaler(),MLPClassifier()),
                 param_distributions = {'mlpclassifier__alpha': ss.expon(scale=100),
@@ -120,7 +123,8 @@ models = [
                 cv = 5,
                 n_jobs = -1),
                 
-        # fourth model - MLP classifier                           
+        # fourth model - MLP classifier
+        "MLP classifier" :                           
         RandomizedSearchCV(
                 MLPClassifier(),
                 param_distributions = {'alpha': ss.expon(scale=100),
@@ -133,9 +137,9 @@ models = [
                 refit = 'f1',
                 cv = 5,
                 n_jobs = -1),
-        """
-        # fifth model - Decision tree Classifier with standard scaler
         
+        # fifth model - Decision tree Classifier with standard scaler
+        "Scaler decision tree" :
         GridSearchCV(
                 make_pipeline(StandardScaler(),DecisionTreeClassifier()),
                 param_grid = {'decisiontreeclassifier__min_samples_split': np.arange(2, 10), 'decisiontreeclassifier__min_samples_leaf': 
@@ -146,7 +150,7 @@ models = [
                 n_jobs = -1),
             
         # sixth model - Random Forest with standard scaler
-        
+        "Scaler random forest" :
         GridSearchCV(
                 make_pipeline(StandardScaler(),RandomForestClassifier()),
                 param_grid = {'randomforestclassifier__n_estimators': np.arange(10, 20), 'randomforestclassifier__min_samples_split': np.arange(2, 10),
@@ -158,9 +162,9 @@ models = [
                 n_jobs = -1),
         
         # seventh model - Bagging Classifier with standard scaler
-        
+        "Scaler bagging trees":
         GridSearchCV(
-                make_pipeline(StandardScaler(),BaggingClassifier()),
+                make_pipeline(StandardScaler(),BaggingClassifier(DecisionTreeClassifier())),
                 param_grid = {'baggingclassifier__n_estimators': np.arange(10, 30), 'baggingclassifier__max_samples': np.arange(2, 
                                        30), 'baggingclassifier__bootstrap': ['True', 'False'], 'baggingclassifier__bootstrap_features': ['True', 
                                         'False']},
@@ -170,16 +174,16 @@ models = [
                 n_jobs = -1),
     
         # eight model - AdaBoost with standard scaler
-        
+        "Scaler adaboost trees":
         GridSearchCV(
-                make_pipeline(StandardScaler(),AdaBoostClassifier()),
+                make_pipeline(StandardScaler(),AdaBoostClassifier(DecisionTreeClassifier())),
                 param_grid = {'adaboostclassifier__n_estimators': np.arange(10, 30), 'adaboostclassifier__learning_rate': 
                                         np.arange(.05, .1)},
                 scoring = ["f1","accuracy"],
                 refit = "f1",
                 cv = 5,
-                n_jobs = -1)"""
-        ]
+                n_jobs = -1)
+        }
 
 
 # -------------------- generata synthetic data ---------------------- # 
@@ -198,7 +202,10 @@ log.info("y train shape %s",y_train.shape) ; log.info("y test shape %s",y_test.s
 
 # ------------------- evaluate models ----------------------------- # 
 
-for model in models:
+for key in models.keys():
+    model = models[key]
+    if key in ["Scaler bagging trees","Scaler adaboost trees"]:
+        model.set_params(estimator__base_estimator = models["Scaler decision tree"].best_estimator_)
     # evaluate model and plot results
     model_test_validate(model,X_train,y_train,X_test,y_test,boundary)
 
