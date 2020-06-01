@@ -24,12 +24,13 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import BaggingClassifier
 from sklearn.ensemble import AdaBoostClassifier
-import sklearn
-#import matplotlib.pyplot as plt
+from sklearn.metrics import plot_confusion_matrix
+import logging
+import matplotlib.pyplot as plt
 
 # initialize the logger
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG,format='%(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO,format='%(name)s - %(levelname)s - %(message)s')
 
 # --------------------- utilities --------------------------------- # 
 
@@ -69,7 +70,12 @@ def model_test_validate(model,X_train,y_train,X_test,y_test,true_boundary):
                   X_test[np.where(y_test != y_test_pred),1],
                   ".",color = "red")
     ax.set_xlabel("x1") ; ax.set_ylabel("x2")
-
+    # plt normalized confusion matrix of best estimator
+    conf_matrix = plot_confusion_matrix(model.best_estimator_,X_test,y_test,cmap=plt.cm.Blues,normalize = "true")
+    conf_matrix.ax_.set_title("Normalized confusion matrix of the classifier")
+    plt.show()
+    
+    
 # --------------------- configuration ------------------------------ # 
 
 # set the sample size
