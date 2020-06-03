@@ -25,6 +25,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.ensemble import BaggingClassifier
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.metrics import plot_confusion_matrix
+from sklearn.model_selection import learning_curve
 import logging
 import matplotlib.pyplot as plt
 
@@ -34,6 +35,119 @@ logging.basicConfig(level=logging.INFO,format='%(name)s - %(levelname)s - %(mess
 
 # --------------------- utilities --------------------------------- # 
 
+def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None,
+                        n_jobs=None, train_sizes=np.linspace(.1, 1.0, 5)):
+    """
+    Generate 3 plots: the test and training learning curve, the training
+    samples vs fit times curve, the fit times vs score curve.
+
+    Parameters
+    ----------
+    estimator : object type that implements the "fit" and "predict" methods
+        An object of that type which is cloned for each validation.
+
+    title : string
+        Title for the chart.
+
+    X : array-like, shape (n_samples, n_features)
+        Training vector, where n_samples is the number of samples and
+        n_features is the number of features.
+
+    y : array-like, shape (n_samples) or (n_samples, n_features), optional
+        Target relative to X for classification or regression;
+        None for unsupervised learning.
+
+    axes : array of 3 axes, optional (default=None)
+        Axes to use for plotting the curves.
+
+    ylim : tuple, shape (ymin, ymax), optional
+        Defines minimum and maximum yvalues plotted.
+
+    cv : int, cross-validation generator or an iterable, optional
+        Determines the cross-validation splitting strategy.
+        Possible inputs for cv are:
+
+          - None, to use the default 5-fold cross-validation,
+          - integer, to specify the number of folds.
+          - :term:`CV splitter`,
+          - An iterable yielding (train, test) splits as arrays of indices.
+
+        For integer/None inputs, if ``y`` is binary or multiclass,
+        :class:`StratifiedKFold` used. If the estimator is not a classifier
+        or if ``y`` is neither binary nor multiclass, :class:`KFold` is used.
+
+        Refer :ref:`User Guide <cross_validation>` for the various
+        cross-validators that can be used here.
+
+    n_jobs : int or None, optional (default=None)
+        Number of jobs to run in parallel.
+        ``None`` means 1 unless in a :obj:`joblib.parallel_backend` context.
+        ``-1`` means using all processors. See :term:`Glossary <n_jobs>`
+        for more details.
+
+    train_sizes : array-like, shape (n_ticks,), dtype float or int
+        Relative or absolute numbers of training examples that will be used to
+        generate the learning curve. If the dtype is float, it is regarded as a
+        fraction of the maximum size of the training set (that is determined
+        by the selected validation method), i.e. it has to be within (0, 1].
+        Otherwise it is interpreted as absolute sizes of the training sets.
+        Note that for classification the number of samples usually have to
+        be big enough to contain at least one sample from each class.
+        (default: np.linspace(0.1, 1.0, 5))
+    """
+    if axes is None:
+        _, axes = plt.subplots(1, 3, figsize=(20, 5))
+
+    axes[0].set_title(title)
+    if ylim is not None:
+        axes[0].set_ylim(*ylim)
+    axes[0].set_xlabel("Training examples")
+    axes[0].set_ylabel("Score")
+
+    train_sizes, train_scores, test_scores, fit_times, _ = \
+        learning_curve(estimator, X, y, cv=cv, n_jobs=n_jobs,
+                       train_sizes=train_sizes,
+                       return_times=True)
+    train_scores_mean = np.mean(train_scores, axis=1)
+    train_scores_std = np.std(train_scores, axis=1)
+    test_scores_mean = np.mean(test_scores, axis=1)
+    test_scores_std = np.std(test_scores, axis=1)
+    fit_times_mean = np.mean(fit_times, axis=1)
+    fit_times_std = np.std(fit_times, axis=1)
+
+    # Plot learning curve
+    axes[0].grid()
+    axes[0].fill_between(train_sizes, train_scores_mean - train_scores_std,
+                         train_scores_mean + train_scores_std, alpha=0.1,
+                         color="r")
+    axes[0].fill_between(train_sizes, test_scores_mean - test_scores_std,
+                         test_scores_mean + test_scores_std, alpha=0.1,
+                         color="g")
+    axes[0].plot(train_sizes, train_scores_mean, 'o-', color="r",
+                 label="Training score")
+    axes[0].plot(train_sizes, test_scores_mean, 'o-', color="g",
+                 label="Cross-validation score")
+    axes[0].legend(loc="best")
+
+    # Plot n_samples vs fit_times
+    axes[1].grid()
+    axes[1].plot(train_sizes, fit_times_mean, 'o-')
+    axes[1].fill_between(train_sizes, fit_times_mean - fit_times_std,
+                         fit_times_mean + fit_times_std, alpha=0.1)
+    axes[1].set_xlabel("Training examples")
+    axes[1].set_ylabel("fit_times")
+    axes[1].set_title("Scalability of the model")
+
+    # Plot fit_time vs score
+    axes[2].grid()
+    axes[2].plot(fit_times_mean, test_scores_mean, 'o-')
+    axes[2].fill_between(fit_times_mean, test_scores_mean - test_scores_std,
+                         test_scores_mean + test_scores_std, alpha=0.1)
+    axes[2].set_xlabel("fit_times")
+    axes[2].set_ylabel("Score")
+    axes[2].set_title("Performance of the model")
+
+    return plt
 
 def model_test_validate(model,X_train,y_train,X_test,y_test,true_boundary):
     """
@@ -73,6 +187,12 @@ def model_test_validate(model,X_train,y_train,X_test,y_test,true_boundary):
     # plt normalized confusion matrix of best estimator
     conf_matrix = plot_confusion_matrix(model.best_estimator_,X_test,y_test,cmap=plt.cm.Blues,normalize = "true")
     conf_matrix.ax_.set_title("Normalized confusion matrix of the classifier")
+    plt.show()
+    # plot the learning curve
+    fig, axes = plt.subplots(3, 2, figsize=(10, 15))
+    plot_learning_curve(model.best_estimator_, title = "Learning curve of top estimator",
+                        X = X_train, y = y_train, axes=axes[:, 0], ylim=(0.7, 1.01),
+                    cv=5, n_jobs=4)
     plt.show()
     
     
@@ -145,50 +265,50 @@ models = {
                 n_jobs = -1),
         
         # fifth model - Decision tree Classifier with standard scaler
-        "Scaler decision tree" :
-        GridSearchCV(
-                make_pipeline(StandardScaler(),DecisionTreeClassifier()),
-                param_grid = {'decisiontreeclassifier__min_samples_split': np.arange(2, 10), 'decisiontreeclassifier__min_samples_leaf': 
-                                        np.arange(.05, .2), 'decisiontreeclassifier__max_leaf_nodes': np.arange(2, 30)},
-                scoring = ["f1","accuracy"],
-                refit = "f1",
-                cv = 5,
-                n_jobs = -1),
+        #"Scaler decision tree" :
+        #GridSearchCV(
+         #       make_pipeline(StandardScaler(),DecisionTreeClassifier()),
+         #       param_grid = {'decisiontreeclassifier__min_samples_split': np.arange(2, 10), 'decisiontreeclassifier__min_samples_leaf': 
+         #                               np.arange(.05, .2), 'decisiontreeclassifier__max_leaf_nodes': np.arange(2, 30)},
+         #       scoring = ["f1","accuracy"],
+         #       refit = "f1",
+         #       cv = 5,
+         #       n_jobs = -1),
             
         # sixth model - Random Forest with standard scaler
-        "Scaler random forest" :
-        GridSearchCV(
-                make_pipeline(StandardScaler(),RandomForestClassifier()),
-                param_grid = {'randomforestclassifier__n_estimators': np.arange(10, 20), 'randomforestclassifier__min_samples_split': np.arange(2, 10),
-                              'randomforestclassifier__min_samples_leaf': np.arange(.15, .33), 'randomforestclassifier__max_leaf_nodes': np.arange(2, 30),
-                              'randomforestclassifier__bootstrap': ['True', 'False']},
-                scoring = ["f1","accuracy"],
-                refit = "f1",
-                cv = 5,
-                n_jobs = -1),
+        #"Scaler random forest" :
+        #GridSearchCV(
+         #       make_pipeline(StandardScaler(),RandomForestClassifier()),
+         #       param_grid = {'randomforestclassifier__n_estimators': np.arange(10, 20), 'randomforestclassifier__min_samples_split': np.arange(2, 10),
+         #                     'randomforestclassifier__min_samples_leaf': np.arange(.15, .33), 'randomforestclassifier__max_leaf_nodes': np.arange(2, 30),
+         #                     'randomforestclassifier__bootstrap': ['True', 'False']},
+         #       scoring = ["f1","accuracy"],
+         #       refit = "f1",
+         #       cv = 5,
+         #       n_jobs = -1),
         
         # seventh model - Bagging Classifier with standard scaler
-        "Scaler bagging trees":
-        GridSearchCV(
-                make_pipeline(StandardScaler(),BaggingClassifier(DecisionTreeClassifier())),
-                param_grid = {'baggingclassifier__n_estimators': np.arange(10, 30), 'baggingclassifier__max_samples': np.arange(2, 
-                                       30), 'baggingclassifier__bootstrap': ['True', 'False'], 'baggingclassifier__bootstrap_features': ['True', 
-                                        'False']},
-                scoring = ["f1","accuracy"],
-                refit = "f1",
-                cv = 5,
-                n_jobs = -1),
+        #"Scaler bagging trees":
+        #GridSearchCV(
+          #      make_pipeline(StandardScaler(),BaggingClassifier(DecisionTreeClassifier())),
+          #      param_grid = {'baggingclassifier__n_estimators': np.arange(10, 30), 'baggingclassifier__max_samples': np.arange(2, 
+          #                             30), 'baggingclassifier__bootstrap': ['True', 'False'], 'baggingclassifier__bootstrap_features': ['True', 
+          #                              'False']},
+          #      scoring = ["f1","accuracy"],
+          #      refit = "f1",
+          #      cv = 5,
+         #       n_jobs = -1),
     
         # eight model - AdaBoost with standard scaler
-        "Scaler adaboost trees":
-        GridSearchCV(
-                make_pipeline(StandardScaler(),AdaBoostClassifier(DecisionTreeClassifier())),
-                param_grid = {'adaboostclassifier__n_estimators': np.arange(10, 30), 'adaboostclassifier__learning_rate': 
-                                        np.arange(.05, .1)},
-                scoring = ["f1","accuracy"],
-                refit = "f1",
-                cv = 5,
-                n_jobs = -1)
+        #"Scaler adaboost trees":
+        #GridSearchCV(
+         #       make_pipeline(StandardScaler(),AdaBoostClassifier(DecisionTreeClassifier())),
+         #       param_grid = {'adaboostclassifier__n_estimators': np.arange(10, 30), 'adaboostclassifier__learning_rate': 
+         #                               np.arange(.05, .1)},
+         #       scoring = ["f1","accuracy"],
+         #       refit = "f1",
+        #       cv = 5,
+        #        n_jobs = -1)
         }
 
 

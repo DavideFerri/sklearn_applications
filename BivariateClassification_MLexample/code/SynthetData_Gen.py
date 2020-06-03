@@ -24,7 +24,7 @@ def inv_sigmoid(y):
 
 # initialize the logger
 log = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG,format='%(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO,format='%(name)s - %(levelname)s - %(message)s')
 
 def synthetic_data_generator(size,dgp,parameters,noise,plots = True):
     """
