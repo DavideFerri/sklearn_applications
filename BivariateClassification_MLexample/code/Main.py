@@ -149,7 +149,7 @@ def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None,
 
     return plt
 
-def model_test_validate(model,X_train,y_train,X_test,y_test,true_boundary):
+def model_test_validate(model,X_train,y_train,X_test,y_test,true_boundary,graph_path):
     """
     
     """
@@ -175,6 +175,8 @@ def model_test_validate(model,X_train,y_train,X_test,y_test,true_boundary):
         # plot true decision boundary 
         for elem in boundary:
             ax[i].plot(elem[:,0],elem[:,1])
+    fig_name = graph_path + " test vs predicted labels"
+    plt.savefig(fig_name)
     # plt correct vs wrong labels
     _,ax = plt.subplots()
     ax.plot(   X_test[np.where(y_test == y_test_pred),0],
@@ -184,16 +186,22 @@ def model_test_validate(model,X_train,y_train,X_test,y_test,true_boundary):
                   X_test[np.where(y_test != y_test_pred),1],
                   ".",color = "red")
     ax.set_xlabel("x1") ; ax.set_ylabel("x2")
+    fig_name = graph_path + " correct vs wrong labels"
+    plt.savefig(fig_name)
     # plt normalized confusion matrix of best estimator
+    plt.figure()
     conf_matrix = plot_confusion_matrix(model.best_estimator_,X_test,y_test,cmap=plt.cm.Blues,normalize = "true")
     conf_matrix.ax_.set_title("Normalized confusion matrix of the classifier")
-    plt.show()
+    fig_name = graph_path + " confusion matrix"
+    plt.savefig(fig_name)
     # plot the learning curve
     fig, axes = plt.subplots(3, 2, figsize=(10, 15))
     plot_learning_curve(model.best_estimator_, title = "Learning curve of top estimator",
                         X = X_train, y = y_train, axes=axes[:, 0], ylim=(0.7, 1.01),
                     cv=5, n_jobs=4)
-    plt.show()
+    fig_name = graph_path + " learning curve"
+    fig_name = graph_path + " learning curve"
+    plt.savefig(fig_name)
     
     
 # --------------------- configuration ------------------------------ # 
@@ -330,10 +338,11 @@ log.info("y train shape %s",y_train.shape) ; log.info("y test shape %s",y_test.s
 
 for key in models.keys():
     model = models[key]
+    graph_path = "/Users/davideferri/Documents/Repos/sklearn_applications/BivariateClassification_MLexample/graphs/" + key
     if key in ["Scaler bagging trees","Scaler adaboost trees"]:
         model.set_params(estimator__base_estimator = models["Scaler decision tree"].best_estimator_)
     # evaluate model and plot results
-    model_test_validate(model,X_train,y_train,X_test,y_test,boundary)
+    model_test_validate(model,X_train,y_train,X_test,y_test,boundary,graph_path)
 
     
     

@@ -25,3 +25,5 @@ import matplotlib.pyplot as plt
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO,format='%(name)s - %(levelname)s - %(message)s')
 
+plt.figure()
+plt.show()
