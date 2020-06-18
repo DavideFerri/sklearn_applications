@@ -99,8 +99,8 @@ def plot_learning_curve(estimator, title, X, y, axes=None, ylim=None, cv=None,
         _, axes = plt.subplots(1, 3, figsize=(20, 5))
 
     axes[0].set_title(title)
-    if ylim is not None:
-        axes[0].set_ylim(*ylim)
+    # if ylim is not None:
+        # axes[0].set_ylim(*ylim)
     axes[0].set_xlabel("Training examples")
     axes[0].set_ylabel("Score")
 
@@ -324,7 +324,6 @@ models = {
 
 # produce synthetic data 
 data,boundary = synthetic_data_generator(size = size,dgp = dgp,parameters = true_parameters,noise = noise,plots = True) 
-print(boundary[0].shape)
 
 # -------------------- preprocessing data --------------------------- # 
 

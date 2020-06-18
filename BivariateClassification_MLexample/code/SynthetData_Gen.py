@@ -101,6 +101,8 @@ def synthetic_data_generator(size,dgp,parameters,noise,plots = True):
             boundary = []
             boundary.append(np.array([x1[np.argsort(x1)],-np.sqrt((threshold - alpha - beta1 * x1[np.argsort(x1)]**2)/beta2)]).T)
             boundary.append(np.array([x1[np.argsort(x1)],np.sqrt((threshold - alpha - beta1 * x1[np.argsort(x1)]**2)/beta2)]).T)
+        else:
+            boundary = []
         ax.set_xlabel("x1")
         ax.set_ylabel("x2")
         graph_name = "SyntheticData_scatter_" + dgp
